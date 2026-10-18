@@ -1,6 +1,13 @@
 <?php
 
+session_start();
+
 include_once("connection.php");
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require 'vendor/autoload.php';
 $error = "";
 
 if (isset($_POST['btn'])) {
@@ -13,6 +20,9 @@ if (isset($_POST['btn'])) {
     if ($password !== $confirm_password) {
        $error = "Passwords do not match.";
     } 
+    else if(empty($username) || empty($email) || empty($password) || empty($confirm_password)){
+        $error="All fields are required.";
+    }
     else {
         $check = "SELECT s_no FROM register WHERE email = ?";
         $stmt = mysqli_prepare($result, $check);
@@ -27,23 +37,68 @@ if (isset($_POST['btn'])) {
             $error = "This email is already registered.";
         } 
         else{
+            $otp= rand(1000,9999);
+
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-            $data_insert = "INSERT INTO register(username,email,password) VALUES (?,?,?)";
+            $data_insert = "INSERT INTO register(username,email,password,otp) VALUES (?,?,?,?)";
             $stmt = mysqli_prepare($result, $data_insert);
 
-            mysqli_stmt_bind_param($stmt,"sss",$username,$email,$hashed_password);
+            mysqli_stmt_bind_param($stmt,"ssss",$username,$email,$hashed_password,$otp);
 
             if (mysqli_stmt_execute($stmt)) {
-                header("Location: login.php");
-                exit;
+                $_SESSION['otp_email'] = $email;
+
+                #sending mail
+
+                $mail=new PHPMailer(true);
+
+                try{
+
+                    $mail->isSMTP();
+                    $mail->Host = 'smtp.gmail.com';
+                    $mail->SMTPAuth = true;
+
+                    $mail->Username = 'hey.trisha.dev@gmail.com';
+                    $mail->Password = 'qvcg hpve rlay tmjf';
+
+                    $mail->SMTPSecure = 'tls';
+                    $mail->Port = 587;
+
+                    $mail->setFrom(
+                        'hey.trisha.dev@gmail.com',
+                        'CinemaBook'
+                    );
+
+                    $mail->addAddress($email);
+
+                    $mail->isHTML(true);
+                    $mail->Subject = "CinemaBook OTP";
+                    $mail->Body = "<div>
+                    <h2>Please verify your identity, $username</h2>
+                    <p>Here is your CinemaBook registration authentication code:
+                    <h2>$otp</h2>
+                    This code is valid for 15 minutes and can only be used once.
+                    Please don't share this code with anyone: we'll never ask for it on the phone or via email.
+                    Thanks,
+                    The CinemaBook Team
+                    </p></div>";
+
+                    $mail->send();
+
+                    header("Location: otp.php");
+                    exit;
+
+                } catch (Exception $e) {
+
+                    $error = "OTP could not be sent.";
+
+                }
+                }
             } 
-            else{
-                $error = "Registration Failed!";
-            }
         }
     }
-}
+
 
 ?>
 
