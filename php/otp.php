@@ -77,10 +77,10 @@ if (isset($error)) {
 
 <form method="POST">
     <div class="input-group">
-    <input type="text" name="otp" placeholder="Enter OTP" maxlength="6">
-    <br><br>
-    <button name="verify" class="auth-btn">Verify OTP</button>
+        <label for="otp">OTP</label>
+        <input type="text" name="otp" placeholder="Enter OTP" maxlength="6">
 </div>
+        <button name="verify" class="auth-btn">Verify OTP</button>
 </form>
 </body>
 </html>
